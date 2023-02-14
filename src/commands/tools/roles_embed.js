@@ -50,6 +50,7 @@ module.exports = {
   } else {
     await interaction.reply({
       content: `You do not have the ${role.name} role.`,
+      ephemeral: true,
     });
   }
 }
