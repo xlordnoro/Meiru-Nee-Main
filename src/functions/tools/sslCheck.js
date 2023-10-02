@@ -1,5 +1,5 @@
 const https = require('https');
-const { parseISO, differenceInDays } = require('date-fns');
+const { parse, format, differenceInDays } = require('date-fns');
 const cron = require('node-cron');
 const { EmbedBuilder } = require('discord.js');
 
@@ -12,9 +12,13 @@ module.exports = async (client) => {
     try {
       const req = https.request(websiteURL, async (res) => {
         const certificate = res.socket.getPeerCertificate();
-        const expirationDate = parseISO(certificate.valid_to);
+        const expirationDateStr = certificate.valid_to; // Get the date string
+        console.log('Certificate Data:', certificate);
 
-        if (expirationDate) {
+        // Convert the date string to a JavaScript Date object
+        const expirationDate = parse(expirationDateStr, 'MMM dd HH:mm:ss yyyy \'GMT\'', new Date());
+
+        if (!isNaN(expirationDate)) {
           const daysRemaining = differenceInDays(expirationDate, new Date());
 
           const guild = await client.guilds.fetch('691793566556487731').catch(console.error);
@@ -44,7 +48,7 @@ module.exports = async (client) => {
             console.log(`:white_check_mark: SSL certificate for ${websiteURL} is valid and not expiring soon.`);
           }
         } else {
-          console.error(':x: Unable to retrieve SSL certificate information.');
+          console.error(':x: Unable to retrieve SSL certificate information or parse the date.');
         }
       });
 

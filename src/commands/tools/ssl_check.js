@@ -1,6 +1,6 @@
 const { PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder } = require('discord.js');
 const https = require('https');
-const { parseISO, differenceInDays } = require('date-fns');
+const { parse, format, differenceInDays } = require('date-fns');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -27,18 +27,17 @@ module.exports = {
       const websiteURL = interaction.options.getString('website');
       const req = https.request(websiteURL, (res) => {
         const certificate = res.socket.getPeerCertificate();
-        const expirationDate = parseISO(certificate.valid_to);
+        const expirationDateStr = certificate.valid_to; // Get the date string
+        console.log('Certificate Data:', certificate);
 
-        if (expirationDate) {
+        // Convert the date string to a JavaScript Date object
+        const expirationDate = parse(expirationDateStr, 'MMM dd HH:mm:ss yyyy \'GMT\'', new Date());
+
+        if (!isNaN(expirationDate)) {
           const daysRemaining = differenceInDays(expirationDate, new Date());
           if (daysRemaining <= 7) {
-            const expirationString = expirationDate.toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            });
             interaction.reply({
-              content: `:warning: SSL certificate for ${websiteURL} will expire on ${expirationString} (${daysRemaining} days remaining).`,
+              content: `:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days.`,
               ephemeral: true, // Only visible to the user who triggered the command
             });
           } else {
