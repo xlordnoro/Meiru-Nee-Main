@@ -16,7 +16,8 @@ module.exports = async (client) => {
         console.log('Certificate Data:', certificate);
 
         // Convert the date string to a JavaScript Date object
-        const expirationDate = parse(expirationDateStr, 'MMM dd HH:mm:ss yyyy \'GMT\'', new Date());
+        const formattedDateStr = expirationDateStr.replace(/\s+/g, ' '); // Remove extra spaces
+        const expirationDate = parse(formattedDateStr, 'MMM d HH:mm:ss yyyy \'GMT\'', new Date());
 
         if (!isNaN(expirationDate)) {
           const daysRemaining = differenceInDays(expirationDate, new Date());
@@ -33,17 +34,34 @@ module.exports = async (client) => {
             return;
           }
 
-          // Send the embed to the specified channel if daysRemaining <= 7
-          if (daysRemaining <= 7) {
-            // Prepare the embed for the SSL check result
+          if (daysRemaining > 8 && daysRemaining < 14) {
+            // Prepare the embed for the "8 to 14 days" condition
             const embed = new EmbedBuilder()
               .setTitle('SSL Certificate Status')
               .setDescription(`:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days.`)
               .setColor('#FF0000');
 
-            // Send the embed with a mention to a role
-            await channel.send({ embeds: [embed], content: '<@&939318588605603850>', allowedMentions: { roles: ['939318588605603850'] } });
-            console.log('Embed sent successfully!');
+            // Send the embed with mentions to multiple roles as a single string with spaces
+            await channel.send({
+              embeds: [embed],
+              content: '<@&939318588605603850>',
+              allowedMentions: { roles: ['939318588605603850'] },
+            });
+            console.log('Embed sent successfully for 8 to 14 days condition!');
+          } else if (daysRemaining < 7) {
+            // Prepare the embed for the "less than 7 days" condition
+            const embed2 = new EmbedBuilder()
+              .setTitle('SSL Certificate Status')
+              .setDescription(`:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days. Please renew the SSL Certificate to prevent users from being antsy!`)
+              .setColor('#FF0000');
+
+            // Send the embed with mentions to multiple roles as a single string with spaces
+            await channel.send({
+              embeds: [embed2],
+              content: '<@&939318588605603850>',
+              allowedMentions: { roles: ['939318588605603850'] },
+            });
+            console.log('Embed sent successfully for less than 7 days condition!');
           } else {
             console.log(`:white_check_mark: SSL certificate for ${websiteURL} is valid and not expiring soon.`);
           }
