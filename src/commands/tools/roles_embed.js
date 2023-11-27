@@ -24,7 +24,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setTitle(`Roles`)
       .setDescription(`Please click the buttons below to grant yourself the required roles to view the other channels on the server.`)
-      .setColor(14554646)
+      .setColor('#3498db')
 
 //Create buttons to grant users the gamer or otaku role.
 

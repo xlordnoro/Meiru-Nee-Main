@@ -34,7 +34,7 @@ const {
           .setDescription(
             `Please select from the following options to protect yourself in battle.`
           )
-          .setColor(14554646)
+          .setColor('#3498db')
 
 //Creates an array containing the buttons for the embed. The limit is 5/message and that's set by discord, not me.
 

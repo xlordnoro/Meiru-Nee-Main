@@ -39,7 +39,7 @@ module.exports = async (client) => {
             const embed = new EmbedBuilder()
               .setTitle('SSL Certificate Status')
               .setDescription(`:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days.`)
-              .setColor('#FF0000');
+              .setColor('#3498db');
 
             // Send the embed with mentions to multiple roles as a single string with spaces
             await channel.send({
@@ -53,7 +53,7 @@ module.exports = async (client) => {
             const embed2 = new EmbedBuilder()
               .setTitle('SSL Certificate Status')
               .setDescription(`:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days. Please renew the SSL Certificate to prevent users from being antsy!`)
-              .setColor('#FF0000');
+              .setColor('#3498db');
 
             // Send the embed with mentions to multiple roles as a single string with spaces
             await channel.send({
