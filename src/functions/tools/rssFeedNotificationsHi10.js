@@ -5,7 +5,7 @@ const { EmbedBuilder } = require('discord.js');
 const Parser = require('rss-parser');
 
 // Replace with your RSS feed URL
-const rssFeedURL = 'https://feeds.feedburner.com/hi10anime/qang95rcihi';
+const rssFeedURL = 'https://hi10anime.com/feed/atom';
 
 // Replace with the icon URL
 const iconURL = 'https://images-ext-1.discordapp.net/external/tfjokmvbiCUQ1H5JDeFnVAyNcoO5kAi3jCW0FLEQ8hA/https/ub3r-b0t.com/img/rss.png';
@@ -16,7 +16,7 @@ let latestProcessedLink = null;
 // Function to execute the RSS feed check command
 module.exports = async (client) => {
   const executeRssFeedCheckCommand = async () => {
-    try {   
+    try {
       const parser = new Parser();
       const feed = await parser.parseURL(rssFeedURL);
 
@@ -47,13 +47,16 @@ module.exports = async (client) => {
         const pubDate = new Date(currentPost.pubDate);
         const minutesAgo = differenceInMinutes(new Date(), pubDate);
 
-        // Check if the item is within the last 10 minutes
+        // Check if the item is within the last 60 minutes
         if (minutesAgo <= 60) {
+          // Extract the author/creator information
+          const author = currentPost['dc:creator'] || currentPost.author || 'Unknown Author';
+
           // Remove extra newlines from the content
           const cleanedDescription = currentPost.contentSnippet.replace(/\n+/g, '\n').trim();
 
           const embed = new EmbedBuilder()
-            .setAuthor({ name: 'Meiru-Nee-Main', iconURL })
+            .setAuthor({ name: author, iconURL })
             .setTitle(currentPost.title)
             .setDescription(cleanedDescription)
             .setURL(currentPost.link)
