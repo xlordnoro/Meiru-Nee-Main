@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const https = require('https');
 const cron = require('node-cron');
 const { parse, differenceInMinutes } = require('date-fns');
@@ -10,8 +12,46 @@ const rssFeedURL = 'https://hi10anime.com/feed/atom';
 // Replace with the icon URL
 const iconURL = 'https://images-ext-1.discordapp.net/external/tfjokmvbiCUQ1H5JDeFnVAyNcoO5kAi3jCW0FLEQ8hA/https/ub3r-b0t.com/img/rss.png';
 
-// Variable to store the link of the latest processed item
-let latestProcessedLink = null;
+// File path to store processed entries
+const filePath = path.join(__dirname, 'processedEntries_XLN.json');
+
+// Function to read processed entries from the file
+const readProcessedEntries = () => {
+  try {
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return new Set(JSON.parse(data));
+  } catch (error) {
+    // If the file doesn't exist or there's an error reading, return an empty set
+    return new Set();
+  }
+};
+
+// Function to write processed entries to the file
+const writeProcessedEntries = (set) => {
+  fs.writeFileSync(filePath, JSON.stringify(Array.from(set)), 'utf-8');
+};
+
+// Function to escape special characters in post titles
+const escapeSpecialCharacters = (title) => {
+  const specialCharacters = {
+    '&amp;': '&',
+    '&#124;': '|',
+    '&#33;': '!',
+    '&#63;': '?',
+    '&#45;': '-',
+    '&#91;': '[',
+    '&#93;': ']',
+    '&#40;': '(',
+    '&#41;': ')',
+    // Add more special characters and their entities as needed
+  };
+
+  // Replace HTML entities with special characters
+  return title.replace(/&amp;|&#124;|&#33;|&#63;|&#45;|&#91;|&#93;|&#40;|&#41;/g, (match) => specialCharacters[match] || match);
+};
+
+// Set to store the processed entries
+let processedEntries = readProcessedEntries();
 
 // Function to execute the RSS feed check command
 module.exports = async (client) => {
@@ -20,44 +60,35 @@ module.exports = async (client) => {
       const parser = new Parser();
       const feed = await parser.parseURL(rssFeedURL);
 
-      // Log the last 16 entries in the RSS feed
-      const last16Entries = feed.items.slice(0, 16).map(item => item.title);
-      console.log('Last 16 entries in the RSS feed:', last16Entries);
-
-      // Check if there are new items since the latest processed item
+      // Check if there are new items since the latest processed entry
       const newEntries = feed.items.filter(item => {
         const pubDate = new Date(item.pubDate);
-        const minutesAgo = differenceInMinutes(new Date(), pubDate);
-        return minutesAgo <= 60 && item.link !== latestProcessedLink;
+        const pubDateString = pubDate.toISOString();
+        const entryIdentifier = `${escapeSpecialCharacters(item.title)}-${pubDateString}`;
+
+        if (processedEntries.has(entryIdentifier)) {
+          console.log(`Entry already processed: ${escapeSpecialCharacters(item.title)}`);
+          return false; // Entry already processed
+        }
+
+        return true; // New entry
       });
 
-      // Log the new entries
-      const newEntriesTitles = newEntries.map(item => item.title);
-      console.log('New entries since the last check:', newEntriesTitles);
-
-      // Explicitly log "No new entries found" message
-      if (newEntries.length === 0) {
-        console.log('No new entries found since the last check.');
-        return;
-      }
-
-      // Process new entries in reverse order (oldest to newest)
+      // Process new entries
       const embeds = [];
-      newEntries.reverse().forEach(async (currentPost) => {
+      newEntries.forEach(async (currentPost) => {
         const pubDate = new Date(currentPost.pubDate);
-        const minutesAgo = differenceInMinutes(new Date(), pubDate);
 
         // Check if the item is within the last 60 minutes
-        if (minutesAgo <= 60) {
-          // Extract the author/creator information
+        const minutesAgo = differenceInMinutes(new Date(), pubDate);
+        if (minutesAgo <= 720) {
           const author = currentPost['dc:creator'] || currentPost.author || 'Unknown Author';
-
-          // Remove extra newlines from the content
           const cleanedDescription = currentPost.contentSnippet.replace(/\n+/g, '\n').trim();
+          const title = escapeSpecialCharacters(currentPost.title) || 'Title not available';
 
           const embed = new EmbedBuilder()
             .setAuthor({ name: author, iconURL })
-            .setTitle(currentPost.title)
+            .setTitle(title)
             .setDescription(cleanedDescription)
             .setURL(currentPost.link)
             .setColor('#3498db')
@@ -65,23 +96,33 @@ module.exports = async (client) => {
 
           embeds.push(embed);
 
-          console.log('Embed added for new RSS feed item:', currentPost.title);
+          console.log('Embed added for new RSS feed item:', title);
+
+          // Add the processed entry to the set
+          const pubDateString = pubDate.toISOString();
+          const entryIdentifier = `${title}-${pubDateString}`;
+          processedEntries.add(entryIdentifier);
         }
       });
 
-      // Send all embeds at once
-      if (embeds.length > 0) {
+      // Send each embed separately
+      for (const embed of embeds) {
         const guild = await client.guilds.fetch('691793566556487731').catch(console.error);
         const channel = await guild.channels.fetch('1195515449715208282').catch(console.error);
 
         await channel.send({
-          embeds: embeds
+          embeds: [embed]
         });
 
-        console.log('Embeds sent successfully for new RSS feed items.');
+        console.log('Embed sent successfully for new RSS feed item.');
+      }
 
-        // Update the latest processed item link outside the loop
-        latestProcessedLink = newEntries[0].link;
+      // Write processed entries to the file
+      writeProcessedEntries(processedEntries);
+
+      // Explicitly log "No new entries found" message
+      if (newEntries.length === 0) {
+        console.log('No new entries found since the last check.');
       }
     } catch (error) {
       console.error('An error occurred while checking the RSS feed:', error);
