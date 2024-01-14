@@ -13,7 +13,7 @@ const rssFeedURL = 'https://hi10anime.com/feed/atom';
 const iconURL = 'https://images-ext-1.discordapp.net/external/tfjokmvbiCUQ1H5JDeFnVAyNcoO5kAi3jCW0FLEQ8hA/https/ub3r-b0t.com/img/rss.png';
 
 // File path to store processed entries
-const filePath = path.join(__dirname, 'processedEntries_hi10.json');
+const filePath = path.join(`${__dirname}/../../json/processedEntries_hi10.json`);
 
 // Function to read processed entries from the file
 const readProcessedEntries = () => {
@@ -92,7 +92,7 @@ module.exports = async (client) => {
             .setDescription(cleanedDescription)
             .setURL(currentPost.link)
             .setColor('#3498db')
-            .setTimestamp();
+            .setTimestamp(pubDate);
 
           embeds.push(embed);
 

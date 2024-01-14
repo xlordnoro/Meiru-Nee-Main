@@ -13,7 +13,7 @@ const rssFeedURL = 'https://hi10anime.com/feed/atom';
 const iconURL = 'https://images-ext-1.discordapp.net/external/tfjokmvbiCUQ1H5JDeFnVAyNcoO5kAi3jCW0FLEQ8hA/https/ub3r-b0t.com/img/rss.png';
 
 // File path to store processed entries
-const filePath = path.join(__dirname, 'processedEntries_XLN.json');
+const filePath = path.join(`${__dirname}/../../json/processedEntries_XLN.json`);
 
 // Function to read processed entries from the file
 const readProcessedEntries = () => {
@@ -81,7 +81,7 @@ module.exports = async (client) => {
 
         // Check if the item is within the last 60 minutes
         const minutesAgo = differenceInMinutes(new Date(), pubDate);
-        if (minutesAgo <= 720) {
+        if (minutesAgo <= 60) {
           const author = currentPost['dc:creator'] || currentPost.author || 'Unknown Author';
           const cleanedDescription = currentPost.contentSnippet.replace(/\n+/g, '\n').trim();
           const title = escapeSpecialCharacters(currentPost.title) || 'Title not available';
@@ -92,7 +92,7 @@ module.exports = async (client) => {
             .setDescription(cleanedDescription)
             .setURL(currentPost.link)
             .setColor('#3498db')
-            .setTimestamp();
+            .setTimestamp(pubDate);
 
           embeds.push(embed);
 
