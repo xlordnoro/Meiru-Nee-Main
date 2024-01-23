@@ -33,12 +33,17 @@ const writeProcessedEntries = (set) => {
 
 // Function to escape special characters in post titles
 const escapeSpecialCharacters = (title) => {
+  if (typeof title === 'undefined') {
+    return '';
+  }
+
   const specialCharacters = {
     '&amp;': '&',
     '&#124;': '|',
     '&#33;': '!',
     '&#63;': '?',
     '&#45;': '-',
+    '&#43;': '+',
     '&#91;': '[',
     '&#93;': ']',
     '&#40;': '(',
@@ -47,7 +52,21 @@ const escapeSpecialCharacters = (title) => {
   };
 
   // Replace HTML entities with special characters
-  return title.replace(/&amp;|&#124;|&#33;|&#63;|&#45;|&#91;|&#93;|&#40;|&#41;/g, (match) => specialCharacters[match] || match);
+  return title.replace(/&amp;|&#124;|&#33;|&#63;|&#45;|&#43;|&#91;|&#93;|&#40;|&#41;/g, (match) => specialCharacters[match] || match);
+};
+
+// Function to remove HTML tags from a string
+const stripHtmlTags = (html) => {
+  if (typeof html === 'undefined') {
+    return '';
+  }
+  return html.replace(/<[^>]*>/g, '');
+};
+
+// Function to truncate text after a specified substring
+const truncateAfterSubstring = (text, substring) => {
+  const index = text.indexOf(substring);
+  return index !== -1 ? text.substring(0, index) : text;
 };
 
 // Set to store the processed entries
@@ -74,6 +93,9 @@ module.exports = async (client) => {
         return true; // New entry
       });
 
+      // Sort new entries in ascending order based on the publication date
+      newEntries.sort((a, b) => new Date(a.pubDate) - new Date(b.pubDate));
+
       // Process new entries
       const embeds = [];
       newEntries.forEach(async (currentPost) => {
@@ -82,14 +104,25 @@ module.exports = async (client) => {
         // Check if the item is within the last 60 minutes
         const minutesAgo = differenceInMinutes(new Date(), pubDate);
         if (minutesAgo <= 60) {
-          const author = currentPost['dc:creator'] || currentPost.author || 'Unknown Author';
-          const cleanedDescription = currentPost.contentSnippet.replace(/\n+/g, '\n').trim();
+          const author = escapeSpecialCharacters(currentPost['dc:creator']) || escapeSpecialCharacters(currentPost.author) || 'Unknown Author';
           const title = escapeSpecialCharacters(currentPost.title) || 'Title not available';
+
+          // Use the summary tag for the description
+          let description = escapeSpecialCharacters(stripHtmlTags(currentPost.summary || 'Summary not available')).trim();
+
+          // Remove '&#8230;' from descriptions
+          description = description.replace(/&#8230;|&#160;/g, '');
+
+          // Stop the summary after reaching "Continue reading"
+          description = truncateAfterSubstring(description, 'Continue reading');
+
+          // Add "Continue reading" to the end of descriptions
+          description += '... Continue reading';
 
           const embed = new EmbedBuilder()
             .setAuthor({ name: author, iconURL })
             .setTitle(title)
-            .setDescription(cleanedDescription)
+            .setDescription(description)
             .setURL(currentPost.link)
             .setColor('#3498db')
             .setTimestamp(pubDate);
