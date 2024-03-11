@@ -18,9 +18,9 @@ module.exports = async (client) => {
 
           if (certificate && Object.keys(certificate).length > 0) {
             const expirationDateStr = certificate.valid_to; // Get the date string
-            const expirationDate = parse(expirationDateStr, 'MMM d HH:mm:ss yyyy \'GMT\'', new Date());
+            const expirationDate = new Date(expirationDateStr);
 
-            if (!isNaN(expirationDate)) {
+            if (!isNaN(expirationDate.getTime())) {
               const daysRemaining = differenceInDays(expirationDate, new Date());
 
               const guild = await client.guilds.fetch('155549815466491904').catch(console.error);
@@ -45,7 +45,7 @@ module.exports = async (client) => {
                 // Send the embed with mentions to multiple roles as a single string with spaces
                 await channel.send({
                   embeds: [embed],
-                  content: '<@&320836865047527426> <@&1053914574631477268>',
+                  content: '<@& 320836865047527426> <@&1053914574631477268>',
                   allowedMentions: { roles: ['320836865047527426', '1053914574631477268'] },
                 });
                 console.log('Embed sent successfully for 8 to 14 days condition!');

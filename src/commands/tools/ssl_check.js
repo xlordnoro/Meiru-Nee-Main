@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const tls = require('tls');
-const { parse, differenceInDays } = require('date-fns');
+const { differenceInDays } = require('date-fns');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -23,36 +23,45 @@ module.exports = {
         await interaction.deferReply({ ephemeral: true });
 
         const websiteURL = interaction.options.getString('website');
+        const hostname = websiteURL.replace(/^https?:\/\//, ''); // Remove protocol
 
         const checkCertificate = async () => {
           return new Promise(async (resolve, reject) => {
-            const socket = tls.connect(443, websiteURL, { rejectUnauthorized: false }, () => {
-              const certificate = socket.getPeerCertificate(true);
-              socket.end();
-
-              if (certificate && Object.keys(certificate).length > 0) {
-                const expirationDateStr = certificate.valid_to; // Get the date string
-                const expirationDate = parse(expirationDateStr, 'MMM d HH:mm:ss yyyy \'GMT\'', new Date());
-
-                if (!isNaN(expirationDate)) {
-                  const daysRemaining = differenceInDays(expirationDate, new Date());
-
-                  if (daysRemaining > 8 && daysRemaining < 14) {
-                    resolve(`:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days.`);
-                  } else if (daysRemaining < 7) {
-                    resolve(`:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days. Please renew the SSL Certificate to prevent users from being antsy!`);
+            try {
+              const socket = tls.connect(443, websiteURL, { rejectUnauthorized: false }, () => {
+                const certificate = socket.getPeerCertificate(true);
+                socket.end();
+        
+                if (certificate && Object.keys(certificate).length > 0) {
+                  const expirationDateStr = certificate.valid_to; // Get the date string
+                  const expirationDate = new Date(expirationDateStr);
+        
+                  if (!isNaN(expirationDate)) {
+                    const daysRemaining = differenceInDays(expirationDate, new Date());
+        
+                    if (daysRemaining > 8 && daysRemaining < 14) {
+                      resolve(`:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days.`);
+                    } else if (daysRemaining < 7) {
+                      resolve(`:warning: SSL certificate for ${websiteURL} will expire in ${daysRemaining} days. Please renew the SSL Certificate to prevent users from being antsy!`);
+                    } else {
+                      resolve(`:white_check_mark: SSL certificate for ${websiteURL} is valid and not expiring soon.`);
+                    }
                   } else {
-                    resolve(`:white_check_mark: SSL certificate for ${websiteURL} is valid and not expiring soon.`);
+                    reject(':x: Unable to parse SSL certificate expiration date.');
                   }
                 } else {
-                  reject(':x: Unable to parse SSL certificate expiration date.');
+                  reject(':x: SSL certificate information is empty or incomplete.');
                 }
-              } else {
-                reject(':x: SSL certificate information is empty or incomplete.');
-              }
-            });
+              });
+        
+              socket.on('error', (error) => {
+                reject(`:x: An error occurred while connecting to the server: ${error.message}`);
+              });
+            } catch (error) {
+              reject(`:x: An unexpected error occurred: ${error.message}`);
+            }
           });
-        };
+        };        
 
         const result = await checkCertificate();
         await interaction.editReply({ content: result, ephemeral: true });
@@ -62,7 +71,7 @@ module.exports = {
       }
     } else {
       await interaction.reply({
-        content: `You do not have the Developer role.`,
+        content: `You do not have the Ninja role.`,
         ephemeral: true,
       });
     }
