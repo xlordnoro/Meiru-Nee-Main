@@ -67,7 +67,7 @@ module.exports = async (client) => {
             }
 
             // Check if the message contains an invite link
-            if (message.content.match(/discord.gg\/\w+/i)) {
+            if (message.content.match(/(discord\.gg\/\w+)|(steamcommunity\.com\/gift\/)|(https:\/\/discordgift\.site\/)/i)) {
                 // Check if the author of the message is an admin
                 const member = message.member;
                 if (!member) {
