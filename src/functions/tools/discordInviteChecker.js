@@ -1,9 +1,58 @@
 const Discord = require('discord.js');
+const nodemailer = require('nodemailer');
+const cron = require('node-cron'); // For scheduling tasks
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config(); // Load environment variables from .env file
 
-// Array of admin role IDs
+// Nodemailer transporter setup
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER, // Use environment variable for email user
+        pass: process.env.EMAIL_PASS // Use environment variable for email password
+    }
+});
+
+// The ID of the admin role that can approve invite links
 const adminRoleIds = ['1074229659119661058', '691795495588200487', '234659298024620042'];
 
+// File path to store processed entries
+const filePath = path.join(__dirname, '../../json/processedDiscordInvites.json');
+
+// Function to send email notification with the contents of the JSON file
+async function sendEmailNotification() {
+    try {
+        // Read the contents of the JSON file
+        let jsonData = [];
+        if (fs.existsSync(filePath)) {
+            const fileContent = fs.readFileSync(filePath, 'utf-8');
+            if (fileContent.trim() !== '') {
+                jsonData = JSON.parse(fileContent);
+            }
+        }
+
+        // Email content
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: process.env.EMAIL_USER,
+            subject: 'Unauthorized Invite Links Posted',
+            text: jsonData.join('\n') || 'Nothing concerning happened today.'
+        };
+
+        // Send email
+        await transporter.sendMail(mailOptions);
+        console.log('Email notification sent successfully.');
+
+        // Clear the JSON file after sending email
+        fs.writeFileSync(filePath, '[]');
+    } catch (error) {
+        console.error('Error sending email notification:', error);
+    }
+}
+
 module.exports = async (client) => {
+    // Listen for message events
     client.on('messageCreate', async message => {
         try {
             // Check if message is defined and not null
@@ -19,8 +68,6 @@ module.exports = async (client) => {
 
             // Check if the message contains an invite link
             if (message.content.match(/discord.gg\/\w+/i)) {
-                console.log('Invite link detected:', message.content);
-
                 // Check if the author of the message is an admin
                 const member = message.member;
                 if (!member) {
@@ -28,8 +75,7 @@ module.exports = async (client) => {
                     return;
                 }
 
-                // Check if the member has any of the admin roles
-                const isAdmin = adminRoleIds.some(roleId => member.roles.cache.has(roleId));
+                const isAdmin = member.roles.cache.some(role => adminRoleIds.includes(role.id));
 
                 if (!isAdmin) {
                     // Inform the user that they need admin approval
@@ -38,6 +84,17 @@ module.exports = async (client) => {
                     // Delete the message containing the invite link
                     await message.delete();
                     console.log('Deleted message containing unauthorized invite link.');
+
+                    // Append the response message to the JSON file
+                    let jsonData = [];
+                    if (fs.existsSync(filePath)) {
+                        const fileContent = fs.readFileSync(filePath, 'utf-8');
+                        if (fileContent.trim() !== '') {
+                            jsonData = JSON.parse(fileContent);
+                        }
+                    }
+                    jsonData.push(`${message.author.tag} posted an unauthorized invite link on Discord: ${message.content}`);
+                    fs.writeFileSync(filePath, JSON.stringify(jsonData, null, 4));
                 } else {
                     console.log('User has admin role.');
                 }
@@ -45,5 +102,10 @@ module.exports = async (client) => {
         } catch (error) {
             console.error('Error in handleInviteLinks:', error);
         }
+    });
+
+    // Schedule the email sending to occur daily at 7 a.m.
+    cron.schedule('0 7 * * *', async () => {
+        await sendEmailNotification();
     });
 };
