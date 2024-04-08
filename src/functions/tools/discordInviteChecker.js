@@ -32,12 +32,18 @@ async function sendEmailNotification() {
             }
         }
 
+        // Check if there are any entries in the JSON file
+        if (jsonData.length === 0) {
+            console.log('No unauthorized invite links detected. Skipping email notification.');
+            return;
+        }
+
         // Email content
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: process.env.EMAIL_USER,
             subject: 'Unauthorized Invite Links Posted',
-            text: jsonData.join('\n') || 'Nothing concerning happened today.'
+            text: jsonData.join('\n')
         };
 
         // Send email
