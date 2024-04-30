@@ -85,11 +85,16 @@ module.exports = async (client) => {
 
                 if (!isAdmin) {
                     // Inform the user that they need admin approval
-                    await message.reply('You do not have permission to post invite links. Please contact an admin for approval.');
-
-                    // Delete the message containing the invite link
+                    const reply = await message.reply('You do not have permission to post invite links. Please contact an admin for approval.');
                     await message.delete();
                     console.log('Deleted message containing unauthorized invite link.');
+
+                    // Delete the message containing the invite link after 5 seconds
+                    setTimeout(async () => {
+                        await reply.delete();
+                    }, 5000);
+
+                    console.log('Deleting the reply message now.');
 
                     // Append the response message to the JSON file
                     let jsonData = [];
