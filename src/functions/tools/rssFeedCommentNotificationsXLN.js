@@ -160,7 +160,7 @@ module.exports = async (client) => {
       // Send each embed separately
       for (const embed of embeds) {
         const guild = await client.guilds.fetch('691793566556487731').catch(console.error);
-        const channel = await guild.channels.fetch('1195515449715208282').catch(console.error);
+        const channel = await guild.channels.fetch('1260110806310453308').catch(console.error);
 
         await channel.send({
           embeds: [embed]
