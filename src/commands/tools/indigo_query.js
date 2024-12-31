@@ -4,16 +4,16 @@ const puppeteer = require('puppeteer');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('checkbook_indigo')
-    .setDescription('Checks the stock availability of a book by its title on indigo.')
+    .setDescription('Checks the stock availability of a book by its title on Indigo.')
     .addStringOption(option =>
       option.setName('title')
         .setDescription('The title of the book to check')
         .setRequired(true)),
-  
+
   async execute(interaction) {
     const bookTitle = interaction.options.getString('title');
     const searchUrl = `https://www.indigo.ca/en-ca/search/?keywords=${encodeURIComponent(bookTitle)}`;
-    
+
     await interaction.deferReply({ ephemeral: true });
 
     const browser = await puppeteer.launch({ headless: true });
@@ -25,15 +25,15 @@ module.exports = {
     );
 
     try {
-      await page.goto(searchUrl, { waitUntil: 'networkidle2' }); // Wait until the page is fully loaded
+      await page.goto(searchUrl, { waitUntil: 'networkidle2' });
 
-      // Find the first search result matching the title
+      // Find the first search result matching the title (looser match)
       const bookPageUrl = await page.evaluate((title) => {
         const links = Array.from(document.querySelectorAll('a.link.secondary h3')); // Select all relevant h3 tags
         const matchingLink = links.find(link =>
-          link.textContent.trim().toLowerCase() === title.toLowerCase()
+          link.textContent.trim().toLowerCase().includes(title.toLowerCase()) // Looser substring match
         );
-        return matchingLink ? matchingLink.parentElement.href : null; // Get the href from the parent <a>
+        return matchingLink ? matchingLink.closest('a').href : null; // Get the href from the closest <a>
       }, bookTitle);
 
       if (!bookPageUrl) {
@@ -51,7 +51,7 @@ module.exports = {
       await page.waitForSelector('span.format-value.block-value.swatch-value.selected.selectable', { visible: true });
       await page.click('span.format-value.block-value.swatch-value.selectable[data-attr-value="TP"]');
 
-      await new Promise(r => setTimeout(r, 3000)); // 3-second delay
+      await new Promise(r => setTimeout(r, 2000)); // 2-second delay
 
       // Extract stock information
       const stockStatus = await page.evaluate(() => {
@@ -59,36 +59,55 @@ module.exports = {
         if (notifyMeElement) {
           const text = notifyMeElement.textContent.trim();
           if (text === 'Out of stock online') {
-            return { available: false, shippingDelay: false };
+            return { available: false, shippingDelay: false, preOrder: false };
           } else if (text.startsWith('Ships within')) {
             const weeksMatch = text.match(/Ships within (\d+)-(\d+) weeks/);
-            return {
-              available: true,
-              shippingDelay: true,
-              weeks: weeksMatch ? `${weeksMatch[1]}-${weeksMatch[2]}` : 'N/A'
-            };
+            const monthsMatch = text.match(/Ships within (\d+)-(\d+) months/);
+            if (weeksMatch) {
+              return {
+                available: true,
+                shippingDelay: true,
+                duration: `${weeksMatch[1]}-${weeksMatch[2]} weeks`,
+                preOrder: false,
+              };
+            } else if (monthsMatch) {
+              return {
+                available: true,
+                shippingDelay: true,
+                duration: `${monthsMatch[1]}-${monthsMatch[2]} months`,
+                preOrder: false,
+              };
+            }
+          } else if (text === 'Pre-order online') {
+            return { available: true, shippingDelay: false, preOrder: true };
           }
-          return { available: true, shippingDelay: false };
+          return { available: true, shippingDelay: false, preOrder: false };
         }
       
         const stockElement = document.querySelector('p.delivery-option-details.mouse span:nth-child(2)');
         if (stockElement) {
-          const inStockMatch = stockElement.textContent.match(/In stock online|Ships within (\d+)-(\d+) weeks/);
-          if (inStockMatch) {
+          const preOrderMatch = stockElement.textContent.includes('Pre-order online');
+          const inStockMatch = stockElement.textContent.match(/In stock online|Ships within (\d+)-(\d+) weeks|Ships within (\d+)-(\d+) months/);
+          if (preOrderMatch) {
+            return { available: true, shippingDelay: false, preOrder: true };
+          } else if (inStockMatch) {
             return {
               available: true,
               shippingDelay: inStockMatch[0].includes('Ships within'),
-              weeks: `${inStockMatch[1]}-${inStockMatch[2]}`,
+              duration: inStockMatch[1] ? `${inStockMatch[1]}-${inStockMatch[2]} weeks` : `${inStockMatch[3]}-${inStockMatch[4]} months`,
+              preOrder: false,
             };
           }
         }
   
-        return { available: false, shippingDelay: false };
-      });      
+        return { available: false, shippingDelay: false, preOrder: false };
+      });
 
       const responseMessage = stockStatus.available
-        ? stockStatus.shippingDelay
-          ? `✅ **${bookTitle}** is available for purchase online or in-store, but with a shipping delay of **${stockStatus.weeks} weeks**.`
+        ? stockStatus.preOrder
+          ? `📦 **${bookTitle}** is available for pre-order online.`
+          : stockStatus.shippingDelay
+          ? `✅ **${bookTitle}** is available for purchase online or in-store, but with a shipping delay of **${stockStatus.duration}**.`
           : `✅ **${bookTitle}** is available for purchase online or in-store.`
         : `❌ **${bookTitle}** is out of stock online.`;
 
