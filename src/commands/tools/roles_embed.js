@@ -1,6 +1,7 @@
 //Define any of the required libraries or files to externally load/call for the command here.
 
 const {
+  MessageFlags,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -42,7 +43,7 @@ module.exports = {
 
     await interaction.reply({
       content: `Message sent.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
 
     const channel = client.channels.cache.get('1070209334698590239');
@@ -50,7 +51,7 @@ module.exports = {
   } else {
     await interaction.reply({
       content: `You do not have the ${role.name} role.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 }

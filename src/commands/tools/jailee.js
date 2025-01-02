@@ -1,6 +1,7 @@
 //Define any of the required libraries or files to externally load/call for the command here.
 
 const {
+  MessageFlags,
   SlashCommandBuilder,
   PermissionFlagsBits,
   PermissionsBitField,
@@ -41,23 +42,23 @@ module.exports = {
       if (user.roles.cache.has("1070214154926956584")) {
         await interaction.deferReply({
           fetchReply: true,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         await interaction.editReply({
           content: `You already have the ${role.name} role.`,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       } else {
         await interaction.deferReply({
           fetchReply: true,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         await user.roles.add(role, user).catch(console.error);
         await interaction.editReply({
           content: `Added: ${role.name} role to ${user}.`,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         //Direct the command output to the specified channel via their id ie. #Colosseum
@@ -70,7 +71,7 @@ module.exports = {
     } else {
       await interaction.reply({
         content: `You do not have the Admin role.`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

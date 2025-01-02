@@ -1,6 +1,6 @@
 //Loads the required libraries or files to externally load for the command.
 
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { MessageFlags, SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
 //Create slash command and display a message containing all of the commands available for Mieru-Nee-Main presently.
 
@@ -20,7 +20,7 @@ module.exports = {
 
     await interaction.reply({
       embeds: [embed],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   },
 };

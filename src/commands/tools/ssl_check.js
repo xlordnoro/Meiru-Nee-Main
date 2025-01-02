@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { MessageFlags, SlashCommandBuilder } = require('discord.js');
 const tls = require('tls');
 const { differenceInDays } = require('date-fns');
 
@@ -20,7 +20,7 @@ module.exports = {
     // Cross-references if the user running the command has the developer role. Otherwise, state they lack the developer role.
     if (roles.cache.has("939318588605603850")) {
       try {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const websiteURL = interaction.options.getString('website');
         const hostname = websiteURL.replace(/^https?:\/\//, ''); // Remove protocol
@@ -64,15 +64,15 @@ module.exports = {
         };        
 
         const result = await checkCertificate();
-        await interaction.editReply({ content: result, ephemeral: true });
+        await interaction.editReply({ content: result, flags: MessageFlags.Ephemeral });
       } catch (error) {
         console.error('An error occurred while checking the SSL certificate:', error);
-        await interaction.editReply({ content: ':x: An error occurred while checking the SSL certificate.', ephemeral: true });
+        await interaction.editReply({ content: ':x: An error occurred while checking the SSL certificate.', flags: MessageFlags.Ephemeral });
       }
     } else {
       await interaction.reply({
         content: `You do not have the Ninja role.`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },
