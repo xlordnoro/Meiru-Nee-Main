@@ -93,7 +93,11 @@ const escapeSpecialCharacters = (title) => {
   };
 
   // Replace HTML entities with special characters
-  return title.replace(/&amp;|&#124;|&#33;|&#63;|&#45;|&#43;|&#91;|&#93;|&#40;|&#41;/g, (match) => specialCharacters[match] || match);
+  return title.replace(
+    /&amp;|&#124;|&#33;|&#63;|&#45;|&#43;|&#91;|&#93;|&#40;|&#41;|&#39;|&#8217;|&#8220;|&#8221;|&#8230;|&quot;|&#160;|&#8208;|&#8211;|&#8212;|&#8216;|&#8218;|&#8222;|&#8249;|&#8250;|&#34;|&#35;|&#37;|&#38;|&#42;|&#47;|&#58;|&#59;|&#60;|&#62;|&#64;|&#92;|&#94;|&#95;|&#96;|&#123;|&#125;|&#126;|&#215;|&#247;/g,
+    (match) => specialCharacters[match] || match
+  );
+  
 };
 
 // Function to remove HTML tags from a string

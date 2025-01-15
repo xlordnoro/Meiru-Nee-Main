@@ -1,6 +1,6 @@
 {
   "name": "meiru_nee_main",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "A sadistic pirate queen who hates doing more than necessary and will stop at nothing when her little sisters are threatened.",
   "main": "src/bot.js",
   "scripts": {
