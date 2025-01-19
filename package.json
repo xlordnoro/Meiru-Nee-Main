@@ -1,6 +1,6 @@
 {
   "name": "meiru_nee_main",
-  "version": "2.4.3",
+  "version": "2.5.0",
   "description": "A sadistic pirate queen who hates doing more than necessary and will stop at nothing when her little sisters are threatened.",
   "main": "src/bot.js",
   "scripts": {
@@ -18,7 +18,7 @@
     "discord-embedbuilder": "^4.0.0",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
-    "mongoose": "^6.9.1",
+    "mongoose": "^8.9.5",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.13",
     "ping": "^0.4.4",
